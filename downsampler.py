@@ -9,7 +9,7 @@ import numpy as np
 
 #------------------------------------------------------------------------------
 
-class Subsampler:
+class Downsampler:
 
     def init(self):
         pass
@@ -17,52 +17,52 @@ class Subsampler:
     #--------------------------------------------------------------------------
 
     @staticmethod
-    def subsample_image_minimum(image: np.ndarray) -> np.ndarray:
+    def downsample_image_minimum(image: np.ndarray) -> np.ndarray:
         '''
-        Subsampling using a 2x2 window and keeping the min value
+        Downsampling using a 2x2 window and keeping the min value
 
                 Parameters:
                         `image` (ndarray): Numpy array of the image
 
                 Returns:
-                        `subsampled` (ndarray): Numpy array of the subsampled image
+                        `downsampled` (ndarray): Numpy array of the subsampled image
         '''
         m, n = image.shape
-        subsampled = image.reshape(m//2, 2, n//2, 2).min((1, 3))
-        return subsampled
+        downsampled = image.reshape(m//2, 2, n//2, 2).min((1, 3))
+        return downsampled
 
     #--------------------------------------------------------------------------
 
     @staticmethod
-    def subsample_image_maximum(image: np.ndarray) -> np.ndarray:
+    def downsample_image_maximum(image: np.ndarray) -> np.ndarray:
         '''
-        Subsampling using a 2x2 window and keeping the max value
+        Downsampling using a 2x2 window and keeping the max value
 
                 Parameters:
                         `image` (ndarray): Numpy array of the image
 
                 Returns:
-                        `subsampled` (ndarray): Numpy array of the subsampled image
+                        `downsampled` (ndarray): Numpy array of the subsampled image
         '''
         m, n = image.shape
-        subsampled = image.reshape(m//2, 2, n//2, 2).max((1, 3))
-        return subsampled
+        downsampled = image.reshape(m//2, 2, n//2, 2).max((1, 3))
+        return downsampled
 
     #--------------------------------------------------------------------------
 
     @staticmethod
-    def subsample_image_mean(image: np.ndarray) -> np.ndarray:
+    def downsample_image_mean(image: np.ndarray) -> np.ndarray:
         '''
-        Subsampling using a 2x2 window and keeping the mean value
+        Downsampling using a 2x2 window and keeping the mean value
 
                 Parameters:
                         `image` (ndarray): Numpy array of the image
 
                 Returns:
-                        `subsampled` (ndarray): Numpy array of the subsampled image
+                        `Downsampled` (ndarray): Numpy array of the subsampled image
         '''
         m, n = image.shape
-        subsampled = image.reshape(m//2, 2, n//2, 2).mean((1, 3))
-        return subsampled.astype(np.uint8)
+        downsampled = image.reshape(m//2, 2, n//2, 2).mean((1, 3))
+        return downsampled.astype(np.uint8)
 
 #------------------------------------------------------------------------------
