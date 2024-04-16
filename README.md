@@ -1,6 +1,6 @@
 # Multi-Scale Component-Tree
 
-The __Multi-Scale Component-Tree__ [1] (__MSCT__ for short) is an extension of the concept of component-tree applied to multiple scales of the same image.
+The __Multi-Scale Component-Tree__ [1] (__MSCT__ for short) is an extension of the concept of _component-tree_ [2] applied to multiple scales of the same image.
 
 Instead of building a component-tree on the original image, a set of downsampled images is build using a max-pooling operation.
 A component-tree, called the _base component-tree_, is built on the smallest downsampled image.
