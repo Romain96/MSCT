@@ -14,12 +14,14 @@ from itertools import repeat
 
 from mser import MSER
 from msct_utils import save_image, normalize_image
-from downsampler import Downsampler
+from subsampler import Subsampler
 from max_tree import MaxTree
 from multi_scale_component_tree import MultiScaleComponentTree
 from index_to_pixel import Index2Pixel
 from pixel_power_two_scale_converter import PixelPower2ScaleConverter
 from mser import MSER
+from msct_object_divider import MSCTObjectDivider
+from msct_segmentation import identify_single_objects
 
 #------------------------------------------------------------------------------
 
@@ -191,23 +193,24 @@ class MSCTWrapper():
 
     #--------------------------------------------------------------------------
 
-    def downsample_image(
+    def subsample_image(
         self, image: np.ndarray, n: int, method='maximum', 
         use_median_filter=True, median_filter_size=3, 
         invert_image=False
     ) -> None:
         '''
-        Downsample the given image n times using the given downsampling method (maximum, mean, minimum)
+        Subsample the given image n times using the given subsampling method (maximum, mean, minimum)
 
                 Parameters:
                         `image` (ndarray): Numpy array of the image
-                        `n` (int): number of successive downsampling steps
-                        `method` (str): downsampling method ('maximium', 'minimum' or 'mean')
+                        `n` (int): number of successive subsampling steps
+                        `method` (str): subsampling method ('maximium', 'minimum' or 'mean')
                         `use_median_filter` (bool): whether to apply a median filter to the image before processing it
                         `median_filter_size` (int): size of the median filter, only relevant if `use_median_filter` is True
                         `invert_image` (bool): whether to invert image values (black on white instead as white on black)
 
-                Returns: none
+                Returns:
+                        `subsampled` (ndarray): Numpy array of the subsampled image
         '''
         if invert_image:
             image = 255 - image
@@ -227,8 +230,7 @@ class MSCTWrapper():
         # adding the original image & scale
         scale = 0
         local_data = dict()
-        #local_data['scale'] = f"1_over_{pow(2,2*scale)}"
-        local_data['scale'] = f"{scale}"
+        local_data['scale'] = f"1_over_{pow(2,2*scale)}"
         local_data['image'] = image
         data[scale] = local_data
 
@@ -237,18 +239,17 @@ class MSCTWrapper():
         current_image = image
         for i in range(0, n):
             if method == 'maximum':
-                current_image = Downsampler.downsample_image_maximum(previous_image)
+                current_image = Subsampler.subsample_image_maximum(previous_image)
             elif method == 'minimum':
-                current_image = Downsampler.downsample_image_minimum(previous_image)
+                current_image = Subsampler.subsample_image_minimum(previous_image)
             elif method == 'mean':
-                current_image = Downsampler.downsample_image_mean(previous_image)
+                current_image = Subsampler.subsample_image_mean(previous_image)
             scale = scale + 1
 
             #current_gradient_image = self.compute_gradient_image(current_image)
             
             local_data = dict()
-            #local_data['scale'] = f"1_over_{pow(2,2*scale)}"
-            local_data['scale'] = f"{scale}"
+            local_data['scale'] = f"1_over_{pow(2,2*scale)}"
             local_data['image'] = current_image
             data[scale] = local_data
 
@@ -402,6 +403,100 @@ class MSCTWrapper():
 
     #--------------------------------------------------------------------------
 
+    def divide_objects(self, max_mser: float, min_area: int) -> list[np.ndarray]:
+        '''
+        Attempts to identify single objects (nodes) among maximally augmented nodes.
+
+                Parameters:
+                        `max_mser` (float): Maximum MSER value for objects
+                        `min_area` (int): Minimum surface area for objects
+
+                Returns:
+                        objects (list): list of clusters being boolean images
+        '''
+        
+        objects = identify_single_objects(
+            msct=self.get_msct(), 
+            scale=self.get_index(), 
+            image=self.get_image(), 
+            max_mser=max_mser, 
+            min_area=min_area
+        )
+
+        return objects
+    
+    #--------------------------------------------------------------------------
+
+    def export_objects_as_images(self, images: list[np.ndarray], output_dir: str, all: bool) -> None:
+        '''
+        Exports all identified objects as binary images.
+
+                Parameters:
+                        `images` (list): list of clusters being boolean images
+                        `output_dir` (str): output directory path
+                        `all` (bool): whether to save all individual objects as images or just a combined colour image
+
+                Returns:
+                        None
+        '''
+        MSCTObjectDivider.save_objects(
+            image=self.get_image(), 
+            objects=images, 
+            output_dir=output_dir,
+            all=all,
+            added_rows=self.get_added_rows(),
+            added_columns=self.get_added_columns()
+        )
+
+    #--------------------------------------------------------------------------
+
+    def export_objects_for_kaggle(self, objects: list) -> list:
+        '''
+        Exports a list of 2D detected objects as a list of tuples (index_start, length)
+        to fit the Kaggle Bowl format.
+
+                Parameters:
+                        `objects` (list): list of objects, nodes of the MSCT
+
+                Returns:
+                        `kaggle` (list): list of tuples (index_start, length) representing `objects`
+        '''
+        kaggle = []
+        msct = self.get_msct()
+        # ALGO:
+        # build a 2D image
+        # crop to the bounding box
+        # detect start_index and continue until there is data to obtain length
+        # store (start_index, length) in kaggle
+        # repeat the two previous steps until reaching the end of the bounding box
+        # repreat all above steps for all objects
+        for obj in objects:
+            fz_pixels = msct.get_local_flat_zone(obj, obj.get_scale())
+            fz = msct.build_node_content_image(self.get_image(), fz_pixels)
+            width = self.get_image().shape[1]
+            start = None
+            length = 0
+            for row_index in range(0, fz.shape[0]):
+                for column_index in range(0, fz.shape[1]):
+                    if fz[row_index, column_index] != 0:
+                        if start == None:
+                            start = row_index * width + column_index
+                            length = 1
+                        else:
+                            length += 1
+                    else:
+                        if start != None:
+                            kaggle.append((start, length))
+                            start = None
+                            length = 0
+                if length > 0:
+                    kaggle.append((start, length+1))
+                    start = None
+                    length = 0
+        return kaggle
+
+    #--------------------------------------------------------------------------
+
     def save_msct_dot(self, filename: str, simple: bool) -> None:
         '''
         Interface for MultiScaleComponentTree.save_dot() method.
@@ -481,20 +576,20 @@ class MSCTWrapper():
 
     #--------------------------------------------------------------------------
 
-    def save_downsampled_images(self, downsampled_dir: str, downsampled_name: str) -> None:
+    def save_subsampled_images(self, subsampled_dir: str, subsampled_name: str) -> None:
         '''
-        Saves the downsampled images for each scale.
+        Saves the subsampled images for each scale.
 
                 Parameters:
-                        `downsampled_dir` (str): output directory for saving downsampled images
-                        `downsampled_name` (str): downsampled image name
+                        `subsampled_dir` (str): output directory for saving subsampled images
+                        `subsampled_name` (str): subsampled image name
         '''
         data = self.get_data()
         for index in data.keys():
             image = self.get_image_at_index(index)
             scale = self.get_scale_at_index(index)
-            out_name = f"{downsampled_name}_{scale}"
-            save_image(image=image, name=out_name, output_dir=downsampled_dir)
+            out_name = f"{subsampled_name}_{scale}"
+            save_image(image=image, name=out_name, output_dir=subsampled_dir)
 
     #--------------------------------------------------------------------------
 
