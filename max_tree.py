@@ -45,7 +45,7 @@ class MaxTree(ComponentTree):
     def build_component_tree(self, image: np.ndarray, invert_image: bool) -> None:
         '''
         Builds a component-tree using an implementation based on Najman's algorithm published in :
-        L.Najmand, M.Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006
+        L.Najman, M.Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006
 
                 Parameters:
                         `image` (nparray): Numpy array of the image
@@ -150,7 +150,7 @@ class MaxTree(ComponentTree):
     def build_component_tree_from_partial_image(self, image: np.ndarray, mask:np.ndarray, invert_image: bool) -> None:
         '''
         Builds a component-tree on a given set of pixels using an implementation based on Najman's algorithm published in :
-        L.Najmand, M.Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006
+        L.Najman, M.Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006
 
                 Parameters:
                         `image` (nparray): Numpy array of the image
