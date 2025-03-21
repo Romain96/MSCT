@@ -14,15 +14,22 @@ from tarjan_union_find import TarjanUnionFind
 #------------------------------------------------------------------------------
 
 def make_node(point: ComponentTreePoint) -> ComponentTreeNode:
-    '''
+    """
     Creates a node the size of a point.
 
-            Parameters:
-                    `point` (ComponentTreePoint): A point (i.e. a pixel)
+    Parameters
+    ----------
+    point: ComponentTreePoint
+        A point (i.e. a pixel).
 
-            Returns:
-                    `n` (ComponentTreeNode): A new node containing the given point
-    '''
+    Returns
+    -------
+    n: ComponentTreeNode
+        A new node containing the given point.
+
+    Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+    """
+
     n = ComponentTreeNode()
     n.set_index(point.get_index())
     n.set_level(point.get_value())
@@ -37,18 +44,28 @@ def make_node(point: ComponentTreePoint) -> ComponentTreeNode:
 #------------------------------------------------------------------------------
 
 def merge_nodes(nodes: list, q: ComponentTreeSet, n1: int, n2: int) -> int:
-    '''
+    """
     Merge two nodes (attributes, etc.) together and return the index of the resulting node.
 
-            Parameters:
-                    `nodes` (ComponentTreeNode[]): The list of nodes
-                    `q` (ComponentTreeSet): The collection Q
-                    `n1` (int): Index of the first node
-                    `n2` (int): Index of the second node
+    Parameters
+    ----------
+    nodes: ComponentTreeNode[]
+        The list of nodes.
+    q: ComponentTreeSet)
+        The collection Q.
+    n1: int
+        Index of the first node.
+    n2: int
+        Index of the second node.
 
-            Returns:
-                    `tmp_n1` (int): index of the resulting node
-    '''
+    Returns
+    -------
+    tmp_n1: int
+        The index of the resulting node.
+
+    Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+    """
+
     tmp_n1 = TarjanUnionFind.link(q, n1, n2)
     if tmp_n1 == n2:
         tmp_n2 = n1
@@ -73,17 +90,26 @@ def merge_nodes(nodes: list, q: ComponentTreeSet, n1: int, n2: int) -> int:
 #------------------------------------------------------------------------------
 
 def get_neighbours(x: int, ny: int, nx: int) -> list:
-    '''
-    Retrieves the 4-neighbourdhood of the point of index x.
+    """
+    Retrieves the 4-neighbourdhood of the point of index **x**.
 
-            Parameters:
-                    `x` (int): Index of the point
-                    `ny` (int): Number of rows
-                    `nx` (int): Number of columns
+    Parameters
+    ----------
+    x: int
+        The index of the point.
+    ny: int
+        Number of rows.
+    nx: int
+        Number of columns.
 
-            Returns:
-                    `neighbours` (int[]): list of indices representing the neighbouring points of x
-    '''
+    Returns
+    -------
+    neighbours: int[]
+        The list of indices representing the neighbouring points of **x**.
+
+    Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+    """
+
     neighbours = []
 
     # if the point is not on the very top of the image
@@ -107,17 +133,25 @@ def get_neighbours(x: int, ny: int, nx: int) -> list:
 #------------------------------------------------------------------------------
 
 def lex_sort(a: ComponentTreePoint, b: ComponentTreePoint) -> bool:
-    '''
+    """
     Lexicographical order comparison in decreasing order of level between points.
     For example : (12, 120) < (3, 50) < (4, 50) < (6, 40)
 
-            Parameters:
-                    `a` (Point): The point A
-                    `b` (Point): The point B
+    Parameters
+    ----------
+    a: ComponentTreePoint
+        The point **A**.
+    b: ComponentTreePoint
+        The point **B**.
 
-            Returns:
-                    `lex_sort` (bool): A > B by decresing lexicographical order
-    '''
+    Returns
+    -------
+    lex_sort: bool
+        *True* if **A** > **B** in the decresing lexicographical order, *False* otherwise.
+
+    Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+    """
+
     if a.value() > b.value():
         return True
     if b.value() > a.value():
