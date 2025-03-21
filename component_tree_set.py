@@ -8,50 +8,87 @@ __copyright__ = "Copyright 2023, Romain PERRIN, SDC Team, ICube UMR 7357, Univer
 #------------------------------------------------------------------------------
 
 class ComponentTreeSet():
-    """
-    A class devoted to the component-tree construction, it represents a basic set.
+	"""
+	A class devoted to the component-tree construction, it represents a basic set.
 
-    ...
+	Attributes
+	----------
+	parent : int
+		parent of the set as index
+	rank : int
+		rank of the set [0,+inf[
+	"""
 
-    Attributes
-    ----------
-    parent : int
-        parent of the set as index
-    rank : int
-        rank of the set [0,+inf[
-    """
+	def __init__(self):
+		"""
+		Constructor - it sets **parent** and **rank** to *None*.
 
-    def __init__(self):
-        '''
-        Constructor - it sets parent and rank to None
-        '''
-        self.parent = None # parent of the canonical element
-        self.rank = None   # rank of the canonical element
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-    #--------------------------------------------------------------------------
+		self.parent = None # parent of the canonical element
+		self.rank = None   # rank of the canonical element
 
-    def get_parent(self) -> int:
-        '''
-        Getter for attribute `parent`
-        '''
-        return self.parent
+	#--------------------------------------------------------------------------
 
-    def set_parent(self, parent: int) -> None:
-        '''
-        Setter for attribute `parent`
-        '''
-        self.parent = parent
+	def get_parent(self) -> int:
+		"""
+		Getter for attribute **parent**.
 
-    #----------------------------------------
+		Returns
+		-------
+		: int
+			The index of the set's parent.
 
-    def get_rank(self) -> int:
-        '''
-        Getter for attribute `rank`
-        '''
-        return self.rank
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-    def set_rank(self, rank: int) -> None:
-        '''
-        Setter for attribute `rank`
-        '''
-        self.rank = rank
+		return self.parent
+	
+	#--------------------------------------------------------------------------
+
+	def set_parent(self, parent: int) -> None:
+		"""
+		Setter for attribute *parent*.
+
+		Parameters
+		----------
+		parent: int
+			Index of the set's parent.
+
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+
+		self.parent = parent
+
+	#--------------------------------------------------------------------------
+
+	def get_rank(self) -> int:
+		"""
+		Getter for attribute *rank*.
+
+		Returns
+		-------
+		: int
+			The rank of the set.
+
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+
+		return self.rank
+	
+	#--------------------------------------------------------------------------
+
+	def set_rank(self, rank: int) -> None:
+		"""
+		Setter for attribute *rank*.
+
+		Parameters
+		----------
+		rank: int
+			The set's rank.
+
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+
+		self.rank = rank
