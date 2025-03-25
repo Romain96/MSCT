@@ -10,59 +10,84 @@ import numpy as np
 #------------------------------------------------------------------------------
 
 class Downsampler:
+	"""
+	This class provides methods to downsample an image into a set of downsampled images of increasingly smaller sizes.
 
-    def init(self):
-        pass
+	Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+	"""
 
-    #--------------------------------------------------------------------------
+	def init(self):
+		pass
 
-    @staticmethod
-    def downsample_image_minimum(image: np.ndarray) -> np.ndarray:
-        '''
-        Downsampling using a 2x2 window and keeping the min value
+	#--------------------------------------------------------------------------
 
-                Parameters:
-                        `image` (ndarray): Numpy array of the image
+	@staticmethod
+	def downsample_image_minimum(image: np.ndarray) -> np.ndarray:
+		"""
+		Downsamples a grayscale image using a 2x2 window and retaining the minimum pixel value.
 
-                Returns:
-                        `downsampled` (ndarray): Numpy array of the subsampled image
-        '''
-        m, n = image.shape
-        downsampled = image.reshape(m//2, 2, n//2, 2).min((1, 3))
-        return downsampled
+		Parameters
+		----------
+		image: ndarray
+			Grayscale image to downsample (as Numpy array).
 
-    #--------------------------------------------------------------------------
+		Returns
+		-------
+		downsampled : ndarray
+			Downsampled image (as Numpy array).
 
-    @staticmethod
-    def downsample_image_maximum(image: np.ndarray) -> np.ndarray:
-        '''
-        Downsampling using a 2x2 window and keeping the max value
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+	
+		m, n = image.shape
+		downsampled = image.reshape(m//2, 2, n//2, 2).min((1, 3))
+		return downsampled
 
-                Parameters:
-                        `image` (ndarray): Numpy array of the image
+	#--------------------------------------------------------------------------
 
-                Returns:
-                        `downsampled` (ndarray): Numpy array of the subsampled image
-        '''
-        m, n = image.shape
-        downsampled = image.reshape(m//2, 2, n//2, 2).max((1, 3))
-        return downsampled
+	@staticmethod
+	def downsample_image_maximum(image: np.ndarray) -> np.ndarray:
+		"""
+		Downsamples a grayscale image using a 2x2 window and retaining the maximum pixel value.
 
-    #--------------------------------------------------------------------------
+		Parameters
+		----------
+		image : ndarray
+			Grayscale image (as Numpy array).
 
-    @staticmethod
-    def downsample_image_mean(image: np.ndarray) -> np.ndarray:
-        '''
-        Downsampling using a 2x2 window and keeping the mean value
+		Returns
+		-------
+		downsampled : ndarray
+			Downsampled image (as Numpy array).
 
-                Parameters:
-                        `image` (ndarray): Numpy array of the image
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+		m, n = image.shape
+		downsampled = image.reshape(m//2, 2, n//2, 2).max((1, 3))
+		return downsampled
 
-                Returns:
-                        `Downsampled` (ndarray): Numpy array of the subsampled image
-        '''
-        m, n = image.shape
-        downsampled = image.reshape(m//2, 2, n//2, 2).mean((1, 3))
-        return downsampled.astype(np.uint8)
+	#--------------------------------------------------------------------------
+
+	@staticmethod
+	def downsample_image_mean(image: np.ndarray) -> np.ndarray:
+		"""
+		Downsamples a grayscale image using a 2x2 window and retaining the mean pixel value.
+
+		Parameters
+		----------
+		image : ndarray
+			Grayscale image (as Numpy array).
+
+		Returns
+		-------
+		Downsampled : ndarray
+			Downsampled image (as Numpy array).
+
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+
+		m, n = image.shape
+		downsampled = image.reshape(m//2, 2, n//2, 2).mean((1, 3))
+		return downsampled.astype(np.uint8)
 
 #------------------------------------------------------------------------------
