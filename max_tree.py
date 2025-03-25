@@ -24,9 +24,9 @@ class MaxTree(ComponentTree):
 
 	Methods
 	-------
-	build_component_tree(image, invert, debug)
+	build_component_tree(image, invert)
 		Builds the component-tree of the given image using Najman's algorithm.
-	build_component_tree_from_partial_image(image, mask, invert, debug)
+	build_component_tree_from_partial_image(image, mask, invert)
 		Builds the component-tree of a partial image using Najman's algorithm.
 	Inherited methods from the ComponentTree class.
 	

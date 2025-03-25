@@ -15,247 +15,266 @@ from component_tree_utils import make_node, merge_nodes, get_neighbours
 #------------------------------------------------------------------------------
 
 class MinTree(ComponentTree):
-    """
-    Represents a min-tree, with a root node and a list of nodes (ComponentTreeNode).
+	"""
+	This class represents a *min-tree*, with a root node and a list of nodes (ComponentTreeNode).
 
-    ...
+	Attributes
+	----------
+	Inherited attributes from the ComponentTree class.
 
-    Attributes
-    ----------
-    inherited ComponentTree attributes
+	Methods
+	-------
+	build_component_tree(image, invert)
+		Builds the component-tree of the given image using Najman's algorithm.
+	build_component_tree_from_partial_image(image, mask, invert)
+		Builds the component-tree of a partial image using Najman's algorithm.
+	Inherited methods from the ComponentTree class.
 
-    Methods
-    -------
-    build_component_tree(image, invert, debug):
-        builds the component-tree of the given image using Najman's algorithm
-    build_component_tree_from_partial_image(image, mask, invert, debug):
-        builds the component-tree of a partial image using Najman's algorithm
-    inherited ComponentTree methods
-    """
+	Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+	"""
 
-    def __init__(self):
-        '''
-        Constructor - uses its parent initialization.
-        '''
-        super().__init__()
+	#--------------------------------------------------------------------------
 
-    #--------------------------------------------------------------------------
+	def __init__(self):
+		"""
+		Constructor - uses its parent initialization.
 
-    def build_component_tree(self, image: np.ndarray, invert_image: bool) -> None:
-        '''
-        Builds a component-tree using an implementation based on Najman's algorithm published in :
-        L.Najman, M.Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-                Parameters:
-                        `image` (nparray): Numpy array of the image
-                        `invert_image` (bool): whether the input image should be inverted
-                        `debug` (bool): whether to print debug informations
+		super().__init__()
 
-                Returns:
-                        None
-        '''
-        ny = image.shape[0] # number of rows
-        nx = image.shape[1] # number of columns
-        nn = ny * nx        # number of points
+	#--------------------------------------------------------------------------
 
-        image_ptr = image.flatten()
+	def build_component_tree(self, image: np.ndarray, invert_image: bool) -> None:
+		"""
+		Builds a *component-tree* (min-tree) using an implementation based on Najman's algorithm published in :
+		*L. Najman, M. Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006*.
 
-        if invert_image:
-            self.set_invert(True)
-            image_ptr = 255 - image_ptr
-        else:
-            self.set_invert(False)
+		Parameters
+		----------
+		image: ndarray
+			Grayscale image (as Numpy array).
+		invert_image: bool
+			If set to *True*, then the **image** is inverted before computation.
 
-        tree_collection = []
-        node_collection = []
-        nodes = []
-        points = []
-        neighbours = []
-        
-        # auxiliary map which associates, to each canonical element of
-        # tree_collection, the root of the corresponding partial tree
-        lowest_node = [0] * nn
+		Returns
+		-------
+		None
 
-        # pre-processing for the two union-find implementations
-        for p in range(0, nn):
-            tree_collection.append(TarjanUnionFind.make_set(p))
-            node_collection.append(TarjanUnionFind.make_set(p))
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-            point = ComponentTreePoint()
-            point.set_index(p)
-            point.set_value(image_ptr[p])
-            points.append(point)
-            nodes.append(make_node(point))
-            lowest_node[p] = p
+		ny = image.shape[0] # number of rows
+		nx = image.shape[1] # number of columns
+		nn = ny * nx        # number of points
 
-        # sort points according to their lexicographical order in increasing order of level
-        sorted_points = sorted(points, key=lambda x: x.get_value(), reverse=False)
+		image_ptr = image.flatten()
 
-        # main algorithm
-        for point in sorted_points:
-            p = point.get_index()
+		if invert_image:
+			self.set_invert(True)
+			image_ptr = 255 - image_ptr
+		else:
+			self.set_invert(False)
 
-            # search for the canonical node corresponding to the point p
-            cur_tree = TarjanUnionFind.find(tree_collection, p)
-            cur_node = TarjanUnionFind.find(node_collection, lowest_node[cur_tree])
+		tree_collection = []
+		node_collection = []
+		nodes = []
+		points = []
+		neighbours = []
+		
+		# auxiliary map which associates, to each canonical element of
+		# tree_collection, the root of the corresponding partial tree
+		lowest_node = [0] * nn
 
-            neighbours = get_neighbours(p, ny, nx)
+		# pre-processing for the two union-find implementations
+		for p in range(0, nn):
+			tree_collection.append(TarjanUnionFind.make_set(p))
+			node_collection.append(TarjanUnionFind.make_set(p))
 
-            # for each neighbour in the 4-neighbourhood
-            for q in neighbours:
+			point = ComponentTreePoint()
+			point.set_index(p)
+			point.set_value(image_ptr[p])
+			points.append(point)
+			nodes.append(make_node(point))
+			lowest_node[p] = p
 
-                # if the neighbour has already been processed
-                if (image_ptr[q] < image_ptr[p]) or (image_ptr[q] == image_ptr[p] and q < p):
+		# sort points according to their lexicographical order in increasing order of level
+		sorted_points = sorted(points, key=lambda x: x.get_value(), reverse=False)
 
-                    # search for the canonical node corresponding to the point q
-                    adj_tree = TarjanUnionFind.find(tree_collection, q)
-                    adj_node = TarjanUnionFind.find(node_collection, lowest_node[adj_tree])
+		# main algorithm
+		for point in sorted_points:
+			p = point.get_index()
 
-                    # if the two points are not already in the same node
-                    if (cur_node != adj_node):
+			# search for the canonical node corresponding to the point p
+			cur_tree = TarjanUnionFind.find(tree_collection, p)
+			cur_node = TarjanUnionFind.find(node_collection, lowest_node[cur_tree])
 
-                        # if the two canonical nodes have the same level
-                        # it means that these two nodes are in fact part of the same component
-                        if (nodes[cur_node].get_level() == nodes[adj_node].get_level()):
-                            # merge the two nodes
-                            cur_node = merge_nodes(nodes, node_collection, adj_node, cur_node)
+			neighbours = get_neighbours(p, ny, nx)
 
-                        # the canonical node of q is strictly above the current level
-                        # the current node becomes a child of the adjacent node
-                        else:
+			# for each neighbour in the 4-neighbourhood
+			for q in neighbours:
 
-                            # update attributes
-                            nodes[cur_node].set_highest(max(nodes[cur_node].get_highest(), nodes[adj_node].get_highest()))
-                            nodes[cur_node].set_area(nodes[cur_node].get_area() + nodes[adj_node].get_area())
-                            nodes[cur_node].set_subarea(nodes[cur_node].get_subarea() + nodes[adj_node].get_subarea())
+				# if the neighbour has already been processed
+				if (image_ptr[q] < image_ptr[p]) or (image_ptr[q] == image_ptr[p] and q < p):
 
-                            # add to the list of children of the current node
-                            nodes[cur_node].get_children().add(adj_node)
-                            nodes[adj_node].set_father(cur_node)
+					# search for the canonical node corresponding to the point q
+					adj_tree = TarjanUnionFind.find(tree_collection, q)
+					adj_node = TarjanUnionFind.find(node_collection, lowest_node[adj_tree])
 
-                    # link the two partial trees
-                    cur_tree = TarjanUnionFind.link(tree_collection, adj_tree, cur_tree)
+					# if the two points are not already in the same node
+					if (cur_node != adj_node):
 
-                    # keep track of the node of lowest level for the union of the two partial trees
-                    lowest_node[cur_tree] = cur_node
+						# if the two canonical nodes have the same level
+						# it means that these two nodes are in fact part of the same component
+						if (nodes[cur_node].get_level() == nodes[adj_node].get_level()):
+							# merge the two nodes
+							cur_node = merge_nodes(nodes, node_collection, adj_node, cur_node)
 
-        # root of the component-tree
-        root = lowest_node[TarjanUnionFind.find(tree_collection, TarjanUnionFind.find(node_collection, 0))]
+						# the canonical node of q is strictly above the current level
+						# the current node becomes a child of the adjacent node
+						else:
 
-        # set root and nodes of the component-tree
-        self.set_root(root)
-        self.set_nodes(nodes)
+							# update attributes
+							nodes[cur_node].set_highest(max(nodes[cur_node].get_highest(), nodes[adj_node].get_highest()))
+							nodes[cur_node].set_area(nodes[cur_node].get_area() + nodes[adj_node].get_area())
+							nodes[cur_node].set_subarea(nodes[cur_node].get_subarea() + nodes[adj_node].get_subarea())
 
-    #--------------------------------------------------------------------------
+							# add to the list of children of the current node
+							nodes[cur_node].get_children().add(adj_node)
+							nodes[adj_node].set_father(cur_node)
 
-    def build_component_tree_from_partial_image(self, image: np.ndarray, mask:np.ndarray, invert_image: bool) -> None:
-        '''
-        Builds a component-tree on a given set of pixels using an implementation based on Najman's algorithm published in :
-        L.Najman, M.Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006
+					# link the two partial trees
+					cur_tree = TarjanUnionFind.link(tree_collection, adj_tree, cur_tree)
 
-                Parameters:
-                        `image` (nparray): Numpy array of the image
-                        `mask` (ndarray): Numpy array of the same size as image, indicating which pixels should be processed
-                        `invert_image` (bool): whether the input image should be inverted
+					# keep track of the node of lowest level for the union of the two partial trees
+					lowest_node[cur_tree] = cur_node
 
-                Returns:
-                        None
-        '''
-        ny = image.shape[0] # number of rows
-        nx = image.shape[1] # number of columns
-        nn = ny * nx        # number of points
+		# root of the component-tree
+		root = lowest_node[TarjanUnionFind.find(tree_collection, TarjanUnionFind.find(node_collection, 0))]
 
-        image_ptr = image.flatten()
-        mask_ptr = mask.flatten()
+		# set root and nodes of the component-tree
+		self.set_root(root)
+		self.set_nodes(nodes)
 
-        if invert_image:
-            self.set_invert(True)
-            image_ptr = 255 - image_ptr
-        else:
-            self.set_invert(False)
+	#--------------------------------------------------------------------------
 
-        tree_collection = dict()
-        node_collection = dict()
-        nodes = dict()
-        points = dict()
-        neighbours = []
-        lowest_node = dict()
-        points_to_process = []
+	def build_component_tree_from_partial_image(self, image: np.ndarray, mask:np.ndarray, invert_image: bool) -> None:
+		"""
+		Builds a *component-tree* (min-tree) on a given set of pixels using an implementation based on Najman's algorithm published in :
+		*L. Najman, M. Croupie, "Building the component-tree in quasi-linear time", Vol. 15, Num. 11, p. 3531-3539, 2006*.
 
-        # pre-processing for the two union-find implementations
-        for p in range(0, nn):
-            # only for activated pixels in the mask
-            if mask_ptr[p]:
-                tree_collection[p] = TarjanUnionFind.make_set(p)
-                node_collection[p] = TarjanUnionFind.make_set(p)
-                point = ComponentTreePoint()
-                point.set_index(p)
-                point.set_value(image_ptr[p])
-                points[p] = point
-                nodes[p] = make_node(points[p])
-                lowest_node[p] = p
-                points_to_process.append(points[p])
+		Parameters
+		----------
+		image: ndarray
+			Grayscale image (as Numpy array).
+		mask: ndarray
+			Mask image (as Numpy array) of the same size as **image**, indicating which pixels should be processed.
+		invert_image: bool
+			If set to *True*, then the **image** is inverted before computation.
 
-        # sort points according to their lexicographical order in increasing order of level
-        sorted_points = sorted(points_to_process, key=lambda x: x.get_value(), reverse=False)
-        orig = sorted_points[0]
+		Returns
+		-------
+		None
 
-        # main algorithm
-        for point in sorted_points:
-            p = point.get_index()
-            if not mask_ptr[p]:
-                continue
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-            # search for the canonical node corresponding to the point p
-            cur_tree = TarjanUnionFind.find(tree_collection, p)
-            cur_node = TarjanUnionFind.find(node_collection, lowest_node[cur_tree])
+		ny = image.shape[0] # number of rows
+		nx = image.shape[1] # number of columns
+		nn = ny * nx        # number of points
 
-            neighbours = get_neighbours(p, ny, nx)
+		image_ptr = image.flatten()
+		mask_ptr = mask.flatten()
 
-            # for each neighbour in the 4-neighbourhood
-            for q in neighbours:
-                if not mask_ptr[q]:
-                    continue
+		if invert_image:
+			self.set_invert(True)
+			image_ptr = 255 - image_ptr
+		else:
+			self.set_invert(False)
 
-                # if the neighbour has already been processed
-                if (image_ptr[q] < image_ptr[p]) or (image_ptr[q] == image_ptr[p] and q < p):
+		tree_collection = dict()
+		node_collection = dict()
+		nodes = dict()
+		points = dict()
+		neighbours = []
+		lowest_node = dict()
+		points_to_process = []
 
-                    # search for the canonical node corresponding to the point q
-                    adj_tree = TarjanUnionFind.find(tree_collection, q)
-                    adj_node = TarjanUnionFind.find(node_collection, lowest_node[adj_tree])
+		# pre-processing for the two union-find implementations
+		for p in range(0, nn):
+			# only for activated pixels in the mask
+			if mask_ptr[p]:
+				tree_collection[p] = TarjanUnionFind.make_set(p)
+				node_collection[p] = TarjanUnionFind.make_set(p)
+				point = ComponentTreePoint()
+				point.set_index(p)
+				point.set_value(image_ptr[p])
+				points[p] = point
+				nodes[p] = make_node(points[p])
+				lowest_node[p] = p
+				points_to_process.append(points[p])
 
-                    # if the two points are not already in the same node
-                    if (cur_node != adj_node):
+		# sort points according to their lexicographical order in increasing order of level
+		sorted_points = sorted(points_to_process, key=lambda x: x.get_value(), reverse=False)
+		orig = sorted_points[0]
 
-                        # if the two canonical nodes have the same level
-                        # it means that these two nodes are in fact part of the same component
-                        if (nodes[cur_node].get_level() == nodes[adj_node].get_level()):
-                            # merge the two nodes
-                            cur_node = merge_nodes(nodes, node_collection, adj_node, cur_node)
+		# main algorithm
+		for point in sorted_points:
+			p = point.get_index()
+			if not mask_ptr[p]:
+				continue
 
-                        # the canonical node of q is strictly above the current level
-                        # it becomes a child of the current node
-                        else:
+			# search for the canonical node corresponding to the point p
+			cur_tree = TarjanUnionFind.find(tree_collection, p)
+			cur_node = TarjanUnionFind.find(node_collection, lowest_node[cur_tree])
 
-                            # update attributes
-                            nodes[cur_node].set_highest(max(nodes[cur_node].get_highest(), nodes[adj_node].get_highest()))
-                            nodes[cur_node].set_area(nodes[cur_node].get_area() + nodes[adj_node].get_area())
-                            nodes[cur_node].set_subarea(nodes[cur_node].get_subarea() + nodes[adj_node].get_subarea())
+			neighbours = get_neighbours(p, ny, nx)
 
-                            # add to the list of children of the current node
-                            nodes[cur_node].get_children().add(adj_node)
-                            nodes[adj_node].set_father(cur_node)
+			# for each neighbour in the 4-neighbourhood
+			for q in neighbours:
+				if not mask_ptr[q]:
+					continue
 
-                    # link the two partial trees
-                    cur_tree = TarjanUnionFind.link(tree_collection, adj_tree, cur_tree)
+				# if the neighbour has already been processed
+				if (image_ptr[q] < image_ptr[p]) or (image_ptr[q] == image_ptr[p] and q < p):
 
-                    # keep track of the node of lowest level for the union of the two partial trees
-                    lowest_node[cur_tree] = cur_node
+					# search for the canonical node corresponding to the point q
+					adj_tree = TarjanUnionFind.find(tree_collection, q)
+					adj_node = TarjanUnionFind.find(node_collection, lowest_node[adj_tree])
 
-        # root of the component-tree
-        #root = lowest_node[TarjanUnionFind.find(tree_collection, TarjanUnionFind.find(node_collection, 0))]
-        root = lowest_node[TarjanUnionFind.find(tree_collection, TarjanUnionFind.find(node_collection, orig.get_index()))]
+					# if the two points are not already in the same node
+					if (cur_node != adj_node):
 
-        # set root and nodes of the component-tree
-        self.set_root(root)
-        self.set_nodes(nodes)
+						# if the two canonical nodes have the same level
+						# it means that these two nodes are in fact part of the same component
+						if (nodes[cur_node].get_level() == nodes[adj_node].get_level()):
+							# merge the two nodes
+							cur_node = merge_nodes(nodes, node_collection, adj_node, cur_node)
+
+						# the canonical node of q is strictly above the current level
+						# it becomes a child of the current node
+						else:
+
+							# update attributes
+							nodes[cur_node].set_highest(max(nodes[cur_node].get_highest(), nodes[adj_node].get_highest()))
+							nodes[cur_node].set_area(nodes[cur_node].get_area() + nodes[adj_node].get_area())
+							nodes[cur_node].set_subarea(nodes[cur_node].get_subarea() + nodes[adj_node].get_subarea())
+
+							# add to the list of children of the current node
+							nodes[cur_node].get_children().add(adj_node)
+							nodes[adj_node].set_father(cur_node)
+
+					# link the two partial trees
+					cur_tree = TarjanUnionFind.link(tree_collection, adj_tree, cur_tree)
+
+					# keep track of the node of lowest level for the union of the two partial trees
+					lowest_node[cur_tree] = cur_node
+
+		# root of the component-tree
+		#root = lowest_node[TarjanUnionFind.find(tree_collection, TarjanUnionFind.find(node_collection, 0))]
+		root = lowest_node[TarjanUnionFind.find(tree_collection, TarjanUnionFind.find(node_collection, orig.get_index()))]
+
+		# set root and nodes of the component-tree
+		self.set_root(root)
+		self.set_nodes(nodes)
