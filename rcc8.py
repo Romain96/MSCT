@@ -12,270 +12,338 @@ from enum import Enum
 #------------------------------------------------------------------------------
 
 class RCC8Relation(Enum):
-    """
-    Region Connection Calculus 8 - all possible connection types
-    """
-    INV = 0   # invalid connection
-    DC = 1    # disconnected (not overlapping, no common border)
-    EC = 2    # externally connected (common border, not overlapping)
-    EQ = 3    # equal (a and b are the same exact pixels)
-    PO = 4    # partially overlapping (subset of a and b is common)
-    TPP = 5   # tangential proper part (a inside b with common border)
-    TPPi = 6  # tangential proper part inverse (b inside a with common border)
-    NTPP = 7  # non-tangential proper part (a fully inside b)
-    NTPPi = 8 # non-tangential proper part inverse (b fully inside a)
+	"""
+	Enum representing the  RCC8 - Region Connection Calculus 8.
+
+	Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+	"""
+
+	INV = 0   # invalid connection
+	DC = 1    # disconnected (not overlapping, no common border)
+	EC = 2    # externally connected (common border, not overlapping)
+	EQ = 3    # equal (a and b are the same exact pixels)
+	PO = 4    # partially overlapping (subset of a and b is common)
+	TPP = 5   # tangential proper part (a inside b with common border)
+	TPPi = 6  # tangential proper part inverse (b inside a with common border)
+	NTPP = 7  # non-tangential proper part (a fully inside b)
+	NTPPi = 8 # non-tangential proper part inverse (b fully inside a)
 
 #------------------------------------------------------------------------------
 
 def rcc8_to_text(rel: RCC8Relation) -> str:
-    '''
-    Converts a RCC8 relation to a human-readable text
+	"""
+	Converts a RCC8 relation to a human-readable text.
 
-            Parameters:
-                    `rel` (RCC8Relation): RCC8 enum
+	Parameters
+	----------
+	rel: RCC8Relation
+		A RCC8 relation.
 
-            Returns:
-                    text (str): human-readable RCC8 relation
-    '''
-    text = ""
-    if rel == RCC8Relation.INV:
-        text = "invalid"
-    elif rel == RCC8Relation.DC:
-        text = "disconnected"
-    elif rel == RCC8Relation.EC:
-        text = "externally connected"
-    elif rel == RCC8Relation.EQ:
-        text = "equal"
-    elif rel == RCC8Relation.PO:
-        text = "partially overlapping"
-    elif rel == RCC8Relation.TPP:
-        text = "tangential proper part"
-    elif rel == RCC8Relation.TPPi:
-        text = "tangential proper part inverse"
-    elif rel == RCC8Relation.NTPP:
-        text = "non-tangential proper part"
-    elif rel == RCC8Relation.NTPPi:
-        text = "non-tangential proper part inverse"
-    return text
+	Returns
+	-------
+	text: str
+		A human-readable RCC8 relation.
+
+	Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+	"""
+
+	text = ""
+	if rel == RCC8Relation.INV:
+		text = "invalid"
+	elif rel == RCC8Relation.DC:
+		text = "disconnected"
+	elif rel == RCC8Relation.EC:
+		text = "externally connected"
+	elif rel == RCC8Relation.EQ:
+		text = "equal"
+	elif rel == RCC8Relation.PO:
+		text = "partially overlapping"
+	elif rel == RCC8Relation.TPP:
+		text = "tangential proper part"
+	elif rel == RCC8Relation.TPPi:
+		text = "tangential proper part inverse"
+	elif rel == RCC8Relation.NTPP:
+		text = "non-tangential proper part"
+	elif rel == RCC8Relation.NTPPi:
+		text = "non-tangential proper part inverse"
+	return text
 
 #------------------------------------------------------------------------------
 
 class RCC8():
-    """
-    This class provides a collection of methods to connect regions (set of pixels) together
-    using Region Connection Calculus 8 or RCC8.
-    """
+	"""
+	This class provides a collection of methods to connect regions (set of pixels) together
+	using Region Connection Calculus 8 or RCC8.
 
-    name = "Region Connection Calculus 8"
+	Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+	"""
 
-    def __init__(self):
-        pass
+	name = "Region Connection Calculus 8"
 
-    #--------------------------------------------------------------------------
+	def __init__(self):
+		pass
 
-    @staticmethod
-    def compute_relation(p1: set, p2: set) -> tuple:
-        '''
-        Computes the RCC8 relation between two regions/sets of pixels
+	#--------------------------------------------------------------------------
 
-                Parameters:
-                        `p1` (set): first region (set of pixels)
-                        `p2` (set): second region (set of pixels)
+	@staticmethod
+	def compute_relation(
+		p1: set[tuple[int, int]], 
+		p2: set[tuple[int, int]]
+	) -> tuple[RCC8Relation, RCC8Relation, float, float]:
+		"""
+		Computes the RCC8 relation between two regions/sets of pixels.
 
-                Returns:
-                        tuple of 4 values :
-                        (RCC8Relation): RCC8 relation between `p1` and `p2`
-                        (RCC8Relation): RCC8 relation between `p2` and `p1`
-                        (float): percentage of common pixels between `p1` and `p2` relative to `p1`
-                        (float): percentage of common pixels between `p1` and `p2` relative to `p2`
-        '''
-        # empty sets produce an error
-        if len(p1) == 0 or len(p2) == 0:
-            return (RCC8Relation.INV, RCC8Relation.INV)
-        
-        # computing relation
-        p1_boundary, p1_interior = RCC8.region_to_boundary_and_interior(p1)
-        p2_boundary, p2_interior = RCC8.region_to_boundary_and_interior(p2)
-        intersection_boundaries = RCC8.intersection(p1_boundary, p2_boundary)
-        intersection_interiors = RCC8.intersection(p1_interior, p2_interior)
-        percent_p1, percent_p2 = RCC8.get_percentage_common_pixels(p1, p2, intersection_boundaries, intersection_interiors)
+		Parameters
+		----------
+		p1: set[tuple[int, int]]
+			The first region as a set of 2D (row, column) pixels.
+		p2: set[tuple[int, int]]
+			The second region as a set of 2D (row, column) pixels.
 
-        # p1 DC p2 iff intersection(p1, p2) = 0
-        if len(intersection_boundaries) == 0 and len(intersection_interiors) == 0:
-            return (RCC8Relation.DC, RCC8Relation.DC, percent_p1, percent_p2)
-        
-        # p1 EC p2 iff intersection(interior(p1), interior(p2)) = 0 and intersection(boundary(p1), boundary(p2)) != 0
-        elif len(intersection_interiors) == 0 and len(intersection_boundaries) > 0:
-            return (RCC8Relation.EC, RCC8Relation.EC, percent_p1, percent_p2)
-        
-        # p1 PO p2 iff intersection(interior(p1), interior(p2)) != 0 and there exists a pixel of interior(p1) not belonging to interior(p2) or other way around
-        elif len(intersection_interiors) > 0 and len(RCC8.subset_p2_not_in_p1(p2_interior, p1_interior)) > 0:
-            return (RCC8Relation.PO, RCC8Relation.PO, percent_p1, percent_p2)
-        
-        # p1 EQ p2 iff p1 = p2 (intersection(p1, p2) = p1 = p2)
-        elif len(RCC8.intersection(p1, p2)) == len(p1) and len(p1) == len(p2):
-            return (RCC8Relation.EQ, RCC8Relation.EQ, percent_p1, percent_p2)
-        
-        # p1 TTP p2 iff inclusion_ne(p1, p2) and intersection(boundary(p1), boundary(p2)) != 0
-        elif RCC8.is_included_non_equal(p1, p2) and len(intersection_boundaries) > 0:
-            return (RCC8Relation.TPP, RCC8Relation.TPPi, percent_p1, percent_p2)
+		Returns
+		-------
+		: tuple[RCC8Relation, RCC8Relation, float, float]
+			tuple of 4 values
+				RCC8 relation between **p1** and **p2**,
+				RCC8 relation between **p2** and **p1**,
+				percentage of common pixels between **p1** and **p2** relative to **p1**,
+				percentage of common pixels between **p1** and **p2** relative to **p2**.
+		
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-        # p1 TTPi p2 iff inclusion_ne(p2, p1) and intersection(boundary(p1), boundary(p2)) != 0
-        elif RCC8.is_included_non_equal(p2, p1) and len(intersection_boundaries) > 0:
-            return (RCC8Relation.TPPi, RCC8Relation.TPP, percent_p1, percent_p2)
+		# empty sets produce an error
+		if len(p1) == 0 or len(p2) == 0:
+			return (RCC8Relation.INV, RCC8Relation.INV)
+		
+		# computing relation
+		p1_boundary, p1_interior = RCC8.region_to_boundary_and_interior(p1)
+		p2_boundary, p2_interior = RCC8.region_to_boundary_and_interior(p2)
+		intersection_boundaries = RCC8.intersection(p1_boundary, p2_boundary)
+		intersection_interiors = RCC8.intersection(p1_interior, p2_interior)
+		percent_p1, percent_p2 = RCC8.get_percentage_common_pixels(p1, p2, intersection_boundaries, intersection_interiors)
 
-        # p1 NTTP p2 iff inclusion_ne(p1, p2) and intersection(boundary(p1), boundary(p2)) = 0
-        elif RCC8.is_included_non_equal(p1, p2) and len(intersection_boundaries) == 0:
-            return (RCC8Relation.NTPP, RCC8Relation.NTPPi, percent_p1, percent_p2)
+		# p1 DC p2 iff intersection(p1, p2) = 0
+		if len(intersection_boundaries) == 0 and len(intersection_interiors) == 0:
+			return (RCC8Relation.DC, RCC8Relation.DC, percent_p1, percent_p2)
+		
+		# p1 EC p2 iff intersection(interior(p1), interior(p2)) = 0 and intersection(boundary(p1), boundary(p2)) != 0
+		elif len(intersection_interiors) == 0 and len(intersection_boundaries) > 0:
+			return (RCC8Relation.EC, RCC8Relation.EC, percent_p1, percent_p2)
+		
+		# p1 PO p2 iff intersection(interior(p1), interior(p2)) != 0 and there exists a pixel of interior(p1) not belonging to interior(p2) or other way around
+		elif len(intersection_interiors) > 0 and len(RCC8.subset_p2_not_in_p1(p2_interior, p1_interior)) > 0:
+			return (RCC8Relation.PO, RCC8Relation.PO, percent_p1, percent_p2)
+		
+		# p1 EQ p2 iff p1 = p2 (intersection(p1, p2) = p1 = p2)
+		elif len(RCC8.intersection(p1, p2)) == len(p1) and len(p1) == len(p2):
+			return (RCC8Relation.EQ, RCC8Relation.EQ, percent_p1, percent_p2)
+		
+		# p1 TTP p2 iff inclusion_ne(p1, p2) and intersection(boundary(p1), boundary(p2)) != 0
+		elif RCC8.is_included_non_equal(p1, p2) and len(intersection_boundaries) > 0:
+			return (RCC8Relation.TPP, RCC8Relation.TPPi, percent_p1, percent_p2)
 
-        # p2 NTTPi p1 iff inclusion_ne(p1, p2) and intersection(boundary(p1), boundary(p2)) = 0
-        elif RCC8.is_included_non_equal(p2, p1) and len(intersection_boundaries) == 0:
-            return (RCC8Relation.NTPPi, RCC8Relation.NTPP, percent_p1, percent_p2)
-        
-        else:
-            return (RCC8Relation.INV, RCC8Relation.INV, percent_p1, percent_p2)
+		# p1 TTPi p2 iff inclusion_ne(p2, p1) and intersection(boundary(p1), boundary(p2)) != 0
+		elif RCC8.is_included_non_equal(p2, p1) and len(intersection_boundaries) > 0:
+			return (RCC8Relation.TPPi, RCC8Relation.TPP, percent_p1, percent_p2)
 
-    #--------------------------------------------------------------------------
+		# p1 NTTP p2 iff inclusion_ne(p1, p2) and intersection(boundary(p1), boundary(p2)) = 0
+		elif RCC8.is_included_non_equal(p1, p2) and len(intersection_boundaries) == 0:
+			return (RCC8Relation.NTPP, RCC8Relation.NTPPi, percent_p1, percent_p2)
 
-    @staticmethod
-    def region_to_boundary_and_interior(region: set) -> tuple:
-        '''
-        Computes the 4-neighbourhood boundary of a region and returns a subset of `pixels`
-        forming the `boundary` and a subset of pixels forming the `interior` of the region.
-        The union of `boundary` and `interior` is equal to 'region' and their intersection is empty.
+		# p2 NTTPi p1 iff inclusion_ne(p1, p2) and intersection(boundary(p1), boundary(p2)) = 0
+		elif RCC8.is_included_non_equal(p2, p1) and len(intersection_boundaries) == 0:
+			return (RCC8Relation.NTPPi, RCC8Relation.NTPP, percent_p1, percent_p2)
+		
+		else:
+			return (RCC8Relation.INV, RCC8Relation.INV, percent_p1, percent_p2)
 
-                Parameters:
-                        `region` (set): pixels forming a region
+	#--------------------------------------------------------------------------
 
-                Returns:
-                        `boundary` (set): subset of pixels of `region` forming its boundary (4-neighbourhood)
-                        `interior` (set): subset of pixels of `region` forming its interior
-        '''
+	@staticmethod
+	def region_to_boundary_and_interior(region: set[tuple[int, int]]) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
+		"""
+		Computes the 4-neighbourhood boundary of a region and returns a subset of pixels
+		forming the *boundary* and a subset of pixels forming the *interior* of the region.
+		The union of *boundary* and *interior* is equal to **region** and their intersection is empty.
 
-        rows = list()
-        cols = list()
-        for row, col in region:
-            rows.append(row)
-            cols.append(col)
+		Parameters
+		----------
+		region: set[tuple[int, int]]
+			A region as a set of 2D (row, column) pixels.
 
-        # find bounding box
-        row_min = np.amin(rows, axis=0)
-        row_max = np.amax(rows, axis=0)
-        col_min = np.amin(cols, axis=0)
-        col_max = np.amax(cols, axis=0)
-        nrows = row_max - row_min + 1
-        ncols = col_max - col_min + 1
+		Returns
+		-------
+		boundary: set[tuple[int, int]]
+			The subset of pixels of **region** forming its boundary (4-neighbourhood).
+		interior: set[tuple[int, int]]
+			The subset of pixels of **region** forming its interior.
 
-        image = np.zeros((nrows, ncols), dtype=np.uint8)
-        for index in range(0, len(rows)):
-            image[rows[index] - row_min, cols[index] - col_min] = 255
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-        contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        contours = contours[0] if len(contours) == 2 else contours[1]
-        cntr = contours[0]
+		rows = list()
+		cols = list()
+		for row, col in region:
+			rows.append(row)
+			cols.append(col)
 
-        boundary_pixels = set()
-        interior_pixels = set()
-        for pixel in cntr:
-            row = pixel[0,1]
-            col = pixel[0,0]
-            boundary_pixels.add((row + row_min, col + col_min))
-        for pixel in region:
-            if pixel not in boundary_pixels:
-                interior_pixels.add(pixel)
+		# find bounding box
+		row_min = np.amin(rows, axis=0)
+		row_max = np.amax(rows, axis=0)
+		col_min = np.amin(cols, axis=0)
+		col_max = np.amax(cols, axis=0)
+		nrows = row_max - row_min + 1
+		ncols = col_max - col_min + 1
 
-        return boundary_pixels, interior_pixels
-    
-    #--------------------------------------------------------------------------
+		image = np.zeros((nrows, ncols), dtype=np.uint8)
+		for index in range(0, len(rows)):
+			image[rows[index] - row_min, cols[index] - col_min] = 255
 
-    @staticmethod
-    def intersection(p1: set, p2: set) -> set:
-        '''
-        Intersection of sets of pixels.
+		contours = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+		contours = contours[0] if len(contours) == 2 else contours[1]
+		cntr = contours[0]
 
-                Parameters:
-                        `p1` (set): set of pixels
-                        `p2` (set): set of pixels
+		boundary_pixels = set()
+		interior_pixels = set()
+		for pixel in cntr:
+			row = pixel[0,1]
+			col = pixel[0,0]
+			boundary_pixels.add((row + row_min, col + col_min))
+		for pixel in region:
+			if pixel not in boundary_pixels:
+				interior_pixels.add(pixel)
 
-                Returns:
-                    `inter` (set): set of common pixels of `p1` and `p2`
-        '''
-        inter = set()
-        if len(p1) == 0 or len(p2) == 0:
-            return inter
-        for pixel in p1:
-            if pixel in p2:
-                inter.add(pixel)
-        return inter
-    
-    #--------------------------------------------------------------------------
+		return boundary_pixels, interior_pixels
+	
+	#--------------------------------------------------------------------------
 
-    @staticmethod
-    def subset_p2_not_in_p1(p1: set, p2: set) -> set:
-        '''
-        Returns the subset of pixels of `p2` not belonging to `p1`.
+	@staticmethod
+	def intersection(p1: set[tuple[int, int]], p2: set[tuple[int, int]]) -> set[tuple[int, int]]:
+		"""
+		Computes the intersection of sets of pixels.
 
-                Parameters:
-                        `p1` (set): set of pixels
-                        `p2` (set): set of pixels
+		Parameters
+		----------
+		p1: set[tuple[int, int]]
+			A first set of 2D (row, column) pixels.
+		p2: set[tuple[int, int]]
+			A second set of 2D (row, column) pixels.
 
-                Returns:
-                        `p2_only` (set): subset of pixels of `p2` and not in `p1`
-        '''
-        p2_only = set()
-        for pixel in p2:
-            if pixel not in p1:
-                p2_only.add(pixel)
-        return p2_only
+		Returns
+		-------
+		inter: set[tuple[int, int]]
+			The set of common pixels of **p1** and **p2**.
 
-    #--------------------------------------------------------------------------
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-    @staticmethod
-    def is_included_non_equal(p1: set, p2: set) -> bool:
-        '''
-        Checks whether the set `p1` is included but non equal to the set `p2`.
+		inter = set()
+		if len(p1) == 0 or len(p2) == 0:
+			return inter
+		for pixel in p1:
+			if pixel in p2:
+				inter.add(pixel)
+		return inter
+	
+	#--------------------------------------------------------------------------
 
-                Parameters:
-                        `p1` (set): set of pixels
-                        `p2` (set): set of pixels
+	@staticmethod
+	def subset_p2_not_in_p1(p1: set[tuple[int, int]], p2: set[tuple[int, int]]) -> set[tuple[int, int]]:
+		"""
+		Returns the subset of pixels of **p2** not belonging to **p1**.
 
-                Returns:
-                        (bool): True if `p1` is included but non equal to `p2`, False otherwise
-        '''
-        if len(p1) == 0 or len(p2) == 0:
-            return False
-        for pixel in p1:
-            # all pixel of p1 should be in p2 for p1 to be included in p2
-            if pixel not in p2:
-                return False
-        # if p2 has at most the same amount of pixels as p1 then we already checked that all pixels of p1 are in p2
-        # so p2 does not have any pixel not belonging to p1 thus p1 is included and equal to p2
-        # p2 needs to be stricly larger than p1 to have at least one pixel that does not belong to p1 and p2 simultaneously
-        if len(p2) > len(p1):
-            return True
-        else:
-            return False
-        
-    #--------------------------------------------------------------------------
+		Parameters
+		----------
+		p1: set[tuple[int, int]
+			A first set of 2D (row, column) pixels.
+		p2: set[tuple[int, int]]
+			A second set of 2D (row, column) pixels.
 
-    @staticmethod
-    def get_percentage_common_pixels(p1: set, p2: set, inter_boundaries: set, inter_interiors: set):
-        '''
-        Computes the percentage of common pixels relative to p1 and to p2.
+		Returns
+		-------
+		p2_only: set[tuple[int, int]]
+			The subset of pixels of **p2** and not in **p1**.
 
-                Parameters:
-                        `p1` (set): set of pixels P1
-                        `p2` (set): set of pixels P2
-                        `inter_boundaries` (set): subset of pixels of P1 inter P2 only for the boundaries
-                        `inter_interiors` (set): subset of pixels of P1 inter P2 only for the interiors
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
 
-                Returns:
-                        `percent_p1` (float): percentage of common pixels of P1 and P2 relative to P1
-                        `percent_p2` (float): percentage of common pixels of P1 and P2 relative to P2
-        '''
-        nb_common_pixels = len(inter_boundaries) + len(inter_interiors)
-        nb_pixels_p1 = len(p1)
-        nb_pixels_p2 = len(p2)
-        percent_p1 = nb_common_pixels / nb_pixels_p1
-        percent_p2 = nb_common_pixels / nb_pixels_p1
-        return (percent_p1, percent_p2)
+		p2_only = set()
+		for pixel in p2:
+			if pixel not in p1:
+				p2_only.add(pixel)
+		return p2_only
+
+	#--------------------------------------------------------------------------
+
+	@staticmethod
+	def is_included_non_equal(p1: set[tuple[int, int]], p2: set[tuple[int, int]]) -> bool:
+		"""
+		Checks whether the set **p1** is included but non equal to the set **p2**.
+
+		Parameters
+		----------
+		p1: set[tuple[int, int]]
+			A first set of 2D (row, column) pixels.
+		p2: set[tuple[int, int]]
+			A second set of 2D (row, column) pixels.
+
+		Returns
+		-------
+		: bool
+			*True* if **p1** is included but non equal to **p2**, *False* otherwise.
+
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+
+		if len(p1) == 0 or len(p2) == 0:
+			return False
+		for pixel in p1:
+			# all pixel of p1 should be in p2 for p1 to be included in p2
+			if pixel not in p2:
+				return False
+		# if p2 has at most the same amount of pixels as p1 then we already checked that all pixels of p1 are in p2
+		# so p2 does not have any pixel not belonging to p1 thus p1 is included and equal to p2
+		# p2 needs to be stricly larger than p1 to have at least one pixel that does not belong to p1 and p2 simultaneously
+		if len(p2) > len(p1):
+			return True
+		else:
+			return False
+		
+	#--------------------------------------------------------------------------
+
+	@staticmethod
+	def get_percentage_common_pixels(
+		p1: set[tuple[int, int]], p2: set[tuple[int, int]], 
+		inter_boundaries: set[tuple[int, int]], inter_interiors: set[tuple[int, int]]
+	) -> tuple[float, float]:
+		"""
+		Computes the percentage of common pixels relative to **p1** and to **p2**.
+
+		Parameters
+		----------
+		p1: set[tuple[int, int]]
+			A first set of 2D (row, column) pixels.
+		p2: set[tuple[int, int]]
+			A second set of 2D (row, column) pixels.
+		inter_boundaries: set[tuple[int, int]]
+			The subset of 2D (row, column) pixels of **P1** inter **P2** only for the boundaries.
+		inter_interiors: set[tuple[int, int]]
+			The subset of 2D (row, column) pixels of **P1** inter **P2** only for the interiors.
+
+		Returns
+		-------
+		percent_p1: float
+			The percentage of common pixels of **P1** and **P2** relative to **P1**.
+		percent_p2: float
+			The percentage of common pixels of **P1** and **P2** relative to **P2**.
+
+		Written by Romain PERRIN (<romain.perrin@unistra.fr>).
+		"""
+
+		nb_common_pixels = len(inter_boundaries) + len(inter_interiors)
+		nb_pixels_p1 = len(p1)
+		nb_pixels_p2 = len(p2)
+		percent_p1 = nb_common_pixels / nb_pixels_p1
+		percent_p2 = nb_common_pixels / nb_pixels_p2
+		return (percent_p1, percent_p2)
