@@ -71,8 +71,6 @@ def process_image_msct(
 	create_dir_remove_if_exist(objects_dir)
 
 	wrapper = MSCTWrapper()
-	msct_times = []
-	t = time.time()
 
 	# Step 1 : subsampling steps and SSCT building on low scale image
 	if is_colour:
@@ -88,16 +86,10 @@ def process_image_msct(
 			invert_image=False
 		)
 	#wrapper.save_subsampled_images(subsampled_dir=subsampled_dir, subsampled_name='subsampled')
-	msct_times.append(('sub', time.time() - t))
-	t = time.time()
 	wrapper.build_base_msct()
-	msct_times.append(('base', time.time() - t))
-	t = time.time()
 
 	# computing MSER
 	wrapper.compute_mser_percent_height(percent_height=mser_percent_height)
-	msct_times.append(('mser', time.time() - t))
-	t = time.time()
 
 	# reconstructing the original image with the MSCT
 	wrapper.reconstruct_image(reconstructed_dir=reconstructed_dir, reconstructed_name='rec_0', normalize=False)
@@ -106,30 +98,16 @@ def process_image_msct(
 	for subsample_step in range(0, subsample):
 
 		# augmenting MSCT by one scale
-		t = time.time()
 		wrapper.augment_msct_mser(max_area=max_area, max_mser=enrich_max_mser)
-		msct_times.append((f"enrich_{subsample_step}", time.time() - t))
-		t = time.time()
 		
-
 		# reconstructing the original image with the MSCT
 		wrapper.reconstruct_image(reconstructed_dir=reconstructed_dir, reconstructed_name=f"rec_{subsample_step+1}", normalize=False)
 
 		# computing MSER
-		t = time.time()
 		wrapper.compute_mser_percent_height(percent_height=mser_percent_height)
-		msct_times.append((f"mser_{subsample_step}", time.time() - t))
-
-	for txt, val in msct_times:
-		print(f"{txt} : {val}")
-	total_time = sum([i[1] for i in msct_times])
-	print(f"MSCT building time : {total_time}")
 
 	# STEP 2 : segmentation of custers into objects (cells/nuclei)
-	t = time.time()
 	object_images = wrapper.divide_objects(max_mser=segmentation_max_mser, min_area=segmentation_min_area)
-	seg_time = time.time() - t
-	print(f"MSCT segmentation time : {seg_time}")
 	wrapper.export_objects_as_images(images=object_images, output_dir=objects_dir, all=True)
 
 #------------------------------------------------------------------------------
